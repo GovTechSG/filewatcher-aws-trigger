@@ -3,7 +3,7 @@ FROM python:$PYTHON_VERS-alpine
 
 WORKDIR /app
 
-RUN apk install --no-cache gcc
+RUN apk add --no-cache gcc
 COPY requirements.txt requirements.dev.txt /app/
 RUN python3 -m pip install -r requirements.txt \
     && python3 -m pip install -r requirements.dev.txt
