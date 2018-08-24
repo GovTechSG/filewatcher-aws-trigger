@@ -1,0 +1,10 @@
+FROM python:3.7-alpine
+
+WORKDIR /app
+
+COPY requirements.txt requirements.dev.txt /app/
+RUN python3 -m pip install -r requirements.txt \
+    && python3 -m pip install -r requirements.dev.txt
+
+COPY *.py run-test.sh /app/
+ENTRYPOINT ["/app/run-test.sh"]
