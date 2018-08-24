@@ -8,53 +8,43 @@ matrix:
   include:
   - service: docker
     env:
-    - DOCKER=true
+    - PYTHON_VERS=3.6
     - DOCKERFILE=Dockerfile
     - TEST=false
   - service: docker
     env:
-    - DOCKER=true
+    - PYTHON_VERS=3.7
+    - DOCKERFILE=Dockerfile-test
+    - TEST=false
+  - service: docker
+    env:
+    - PYTHON_VERS=3.6
     - DOCKERFILE=Dockerfile-test
     - TEST=true
-  - python: "3.6"
+  - service: docker
     env:
-    - NATIVE=true
-  - python: "3.7-dev"
-    env:
-    - NATIVE=true
-
-before_install:
-- set -e
-
-install:
-- |
-  if [ "$NATIVE" = "true" ]; then
-    pip install -r requirements.txt;
-    pip install -r requirements.dev.txt;
-  fi
+    - PYTHON_VERS=3.7
+    - DOCKERFILE=Dockerfile-test
+    - TEST=true
 
 before_script:
+- set -e
 - |
-  if [ "$DOCKER" = "true" ] && [ "$TEST" = "false" ]; then
+  if [ "$TEST" = "false" ]; then
     docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
   fi
-- |
-  if [ "$DOCKER" = "true" ]; then
-    docker build -f $DOCKERFILE -t $IMAGE_NAME . ;
-  fi
+- docker build --build-arg PYTHON_VERS=$PYTHON_VERS -f $DOCKERFILE -t $IMAGE_NAME . ;
 
 script:
 - |
-  if [ "$DOCKER" = "true" ] && [ "$TEST" = "true" ]; then
+  if [ "$TEST" = "true" ]; then
     docker run --rm -it $IMAGE_NAME;
-  elif [ "$NATIVE" = "true" ]; then
-    pylint *.py;
   fi
 
 after_success:
 - |
-  if [ "$DOCKER" = "true" ] && [ "$TEST" = "false" ] && [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
-    docker push $IMAGE_NAME:latest
+  if [ "$TEST" = "false" ] && [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
+    docker push $IMAGE_NAME:python-$PYTHON_VERS
   fi
 
 branches:
