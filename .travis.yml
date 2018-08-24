@@ -14,7 +14,7 @@ matrix:
   - service: docker
     env:
     - PYTHON_VERS=3.7
-    - DOCKERFILE=Dockerfile-test
+    - DOCKERFILE=Dockerfile
     - TEST=false
   - service: docker
     env:
