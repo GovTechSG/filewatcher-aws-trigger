@@ -31,14 +31,14 @@ before_script:
 - set -e
 - |
   if [ "$TEST" = "false" ]; then
-    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
+    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
   fi
-- docker build --build-arg PYTHON_VERS=$PYTHON_VERS -f $DOCKERFILE -t $IMAGE_NAME . ;
+- docker build --build-arg PYTHON_VERS=$PYTHON_VERS -f $DOCKERFILE -t $IMAGE_NAME .
 
 script:
 - |
   if [ "$TEST" = "true" ]; then
-    docker run --rm -it $IMAGE_NAME;
+    docker run --rm -it $IMAGE_NAME
   fi
 
 after_success:
