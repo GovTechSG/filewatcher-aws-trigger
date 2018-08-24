@@ -10,6 +10,7 @@ matrix:
     env:
     - DOCKER=true
     - DOCKERFILE=Dockerfile
+    - TEST=false
   - service: docker
     env:
     - DOCKER=true
@@ -22,6 +23,9 @@ matrix:
     env:
     - NATIVE=true
 
+before_install:
+- set -e
+
 install:
 - |
   if [ "$NATIVE" = "true" ]; then
@@ -30,6 +34,10 @@ install:
   fi
 
 before_script:
+- |
+  if [ "$DOCKER" = "true" ] && [ "$TEST" = "false" ]; then
+    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
+  fi
 - |
   if [ "$DOCKER" = "true" ]; then
     docker build -f $DOCKERFILE -t $IMAGE_NAME . ;
@@ -41,6 +49,12 @@ script:
     docker run --rm -it $IMAGE_NAME;
   elif [ "$NATIVE" = "true" ]; then
     pylint *.py;
+  fi
+
+after_success:
+- |
+  if [ "$DOCKER" = "true" ] && [ "$TEST" = "false" ] && [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
+    docker push $IMAGE_NAME:latest
   fi
 
 branches:
