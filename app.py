@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+#pylint: disable=line-too-long
 """
 Filewatcher AWS trigger
 
@@ -18,11 +19,10 @@ Options:
     --relative                          Use relative path instead of absolute path for path matches
 """
 
-from enum import Flag, auto
+from enum import Flag
 import logging
 import json
 import os
-import sys
 import time
 
 import boto3
@@ -35,18 +35,25 @@ from watchdog.events import PatternMatchingEventHandler
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
-logger = logging.getLogger('root')
+LOGGER = logging.getLogger('root')
 
 class FileEvent(Flag):
+    """
+    File event bit flag
+    """
     NONE = 0
-    CREATED = auto()
-    DELETED = auto()
-    MODIFIED = auto()
-    MOVED = auto()
+    CREATED = 1
+    DELETED = 2
+    MODIFIED = 4
+    MOVED = 8
     ALL = CREATED | DELETED | MODIFIED | MOVED
 
 
 class Handler(PatternMatchingEventHandler):
+    """
+    Implements PatternMatchingEventHandler with custom parameters to trigger
+    AWS lambda function.
+    """
     def __init__(self, file_event, lambda_name, use_abs_path, *args, **kwargs):
         super(Handler, self).__init__(*args, **kwargs)
         self.file_event = file_event
@@ -54,31 +61,57 @@ class Handler(PatternMatchingEventHandler):
         self.use_abs_path = use_abs_path
 
     def process(self, event):
+        """
+        Common processing function for all file event types.
+        Triggers the AWS lambda function based on given name.
+        Uses default AWS credentials.
+        """
         path = os.path.abspath(event.src_path) if self.use_abs_path else event.src_path
-        logger.debug("{} - {}".format(path, event.event_type))
+        LOGGER.info("%s - %s", path, event.event_type)
 
         trigger_lambda(
             self.lambda_name,
             json.dumps(dict(path=path)))
 
     def on_created(self, event):
+        """
+        Processing function to trigger when file is being created.
+        Only triggered when FileEvent.CREATED is passed into Handler.
+        """
         if self.file_event & FileEvent.CREATED:
             self.process(event)
 
     def on_deleted(self, event):
+        """
+        Processing function to trigger when file is being created.
+        Only triggered when FileEvent.DELETED is passed into Handler.
+        """
         if self.file_event & FileEvent.DELETED:
             self.process(event)
 
     def on_modified(self, event):
+        """
+        Processing function to trigger when file is being created.
+        Only triggered when FileEvent.MODIFIED is passed into Handler.
+        """
         if self.file_event & FileEvent.MODIFIED:
             self.process(event)
 
     def on_moved(self, event):
+        """
+        Processing function to trigger when file is being created.
+        Only triggered when FileEvent.MOVED is passed into Handler.
+        """
         if self.file_event & FileEvent.MOVED:
             self.process(event)
 
 
 def trigger_lambda(name, payload):
+    """
+    Helper function to triggers the AWS lambda function based on the given name
+    and payload. The payload should contain the JSON field 'path' in serialized
+    byte format.
+    """
     client = boto3.client('lambda')
 
     res = client.invoke(
@@ -89,12 +122,15 @@ def trigger_lambda(name, payload):
     )
 
     body = res['Payload'].read().decode('utf-8')
-    logger.info(body)
+    LOGGER.info(body)
 
 
 def main():
+    """
+    Main function to call.
+    """
     args = docopt(__doc__, version='FileWatcher AWS Trigger v0.1')
-    logger.debug(args)
+    LOGGER.debug(args)
 
     watchpath = args['--watchpath']
     lambda_name = args['--name']
@@ -110,7 +146,7 @@ def main():
         use_abs_path=use_abs_path,
         ignore_directories=True,
         lambda_name=lambda_name)
-    
+
     observer = Observer()
     observer.schedule(event_handler, watchpath, recursive=True)
     observer.start()
