@@ -1,10 +1,53 @@
-language: python
-python:
-- "3.6"
+language: bash
 
-install:
-- python3 -m pip install -r requirements.txt
-- python3 -m pip install -r requirements.dev.txt
+env:
+  global:
+  - IMAGE_NAME: guangie88/filewatch-aws-trigger
+
+matrix:
+  include:
+  - service: docker
+    env:
+    - PYTHON_VERS=3.6
+    - DOCKERFILE=Dockerfile
+    - TEST=false
+  - service: docker
+    env:
+    - PYTHON_VERS=3.7
+    - DOCKERFILE=Dockerfile
+    - TEST=false
+  - service: docker
+    env:
+    - PYTHON_VERS=3.6
+    - DOCKERFILE=Dockerfile-test
+    - TEST=true
+  - service: docker
+    env:
+    - PYTHON_VERS=3.7
+    - DOCKERFILE=Dockerfile-test
+    - TEST=true
+
+before_script:
+- set -e
+- |
+  if [ "$TEST" = "false" ]; then
+    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+  fi
+- docker build --build-arg PYTHON_VERS=$PYTHON_VERS -f $DOCKERFILE -t $IMAGE_NAME .
 
 script:
-- pylint *.py
+- |
+  if [ "$TEST" = "true" ]; then
+    docker run --rm -it $IMAGE_NAME
+  fi
+
+after_success:
+- |
+  if [ "$TEST" = "false" ] && [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
+    docker tag $IMAGE_NAME $IMAGE_NAME:python-$PYTHON_VERS
+    docker push $IMAGE_NAME:python-$PYTHON_VERS
+  fi
+
+branches:
+  only:
+  - master
