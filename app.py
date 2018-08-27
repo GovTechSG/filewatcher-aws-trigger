@@ -117,7 +117,7 @@ def main():
     """
     Main function to call.
     """
-    args = docopt(__doc__, version='Filewatch Trigger v0.1.2')
+    args = docopt(__doc__, version='Filewatch Trigger v0.2.0')
     LOGGER.debug(args)
 
     is_cmd_type = args['cmd']
