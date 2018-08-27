@@ -5,13 +5,17 @@ import subprocess
 
 from sub.base.invoker import Invoker
 
+#pylint: disable=too-few-public-methods
 class CmdInvoker(Invoker):
+    """
+    Invoker for invoking template command with path and file event substituted.
+    """
     def __init__(self, cmd):
         self.cmd = cmd
 
     def invoke(self, path, event_type):
         """
-        Helper function to trigger template command.
+        Helper function to invoke and run template command.
         Template command may contain:
         - {0} => path
         - {1} => event type number

@@ -4,8 +4,12 @@
 """
 Filewatch Trigger
 
-This executable uses boto3, so the default AWS credentials can be set up based
-it, e.g. ~/.aws/credentials and ~/.aws/config can be used.
+Triggers possibly the following actions based on provided parameters:
+- AWS Lambda function
+- Shell template command (with path and file event type)
+
+For AWS, this application uses boto3, so the default AWS credentials can be set
+up based on boto3, e.g. ~/.aws/credentials and ~/.aws/config can be used.
 
 Usage:
     app.py cmd (-p <path> -c <cmd>) [-f <glob> -e <bitflag> --force-poll --relative]
@@ -24,7 +28,6 @@ Options:
 
 from enum import Flag
 import logging
-import json
 import os
 import time
 
@@ -56,7 +59,7 @@ class FileEvent(Flag):
 class Handler(PatternMatchingEventHandler):
     """
     Implements PatternMatchingEventHandler with custom parameters to trigger
-    AWS lambda function.
+    the given invoker.
     """
     def __init__(self, invoker, file_event, use_abs_path, *args, **kwargs):
         super(Handler, self).__init__(*args, **kwargs)
@@ -129,18 +132,18 @@ def main():
 
     # cmd only
     cmd = args['--cmd'] if is_cmd_type else None
-        
+
     # aws only
     lambda_name = args['--name'] if is_aws_type else None
 
     def select_invoker():
         if is_aws_type:
             return LambdaInvoker(lambda_name)
-        elif is_cmd_type:
+        if is_cmd_type:
             return CmdInvoker(cmd)
-        else:
-            raise Exception("Invalid subcommand used")
-            
+
+        raise Exception("Invalid subcommand used")
+
     invoker = select_invoker()
     print('Filewatch Trigger program has started, CTRL-C to terminate...')
 
