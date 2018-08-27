@@ -12,8 +12,8 @@ For AWS, this application uses boto3, so the default AWS credentials can be set
 up based on boto3, e.g. ~/.aws/credentials and ~/.aws/config can be used.
 
 Usage:
+    app.py aws-lambda (-p <path> -n <name>) [-f <glob> -e <bitflag> --force-poll --relative]
     app.py cmd (-p <path> -c <cmd>) [-f <glob> -e <bitflag> --force-poll --relative]
-    app.py aws (-p <path> -n <name>) [-f <glob> -e <bitflag> --force-poll --relative]
     app.py (-h | --help)
 
 Options:
@@ -35,7 +35,7 @@ from docopt import docopt
 from watchdog.observers import Observer, polling
 from watchdog.events import PatternMatchingEventHandler
 
-from sub.aws import LambdaInvoker
+from sub.aws_lambda import LambdaInvoker
 from sub.cmd import CmdInvoker
 
 # logging falls under global
@@ -120,8 +120,8 @@ def main():
     args = docopt(__doc__, version='Filewatch Trigger v0.2.0')
     LOGGER.debug(args)
 
+    is_aws_lambda_type = args['aws-lambda']
     is_cmd_type = args['cmd']
-    is_aws_type = args['aws']
 
     # common options
     watchpath = args['--watchpath']
@@ -130,18 +130,17 @@ def main():
     force_poll = args['--force-poll']
     use_abs_path = not args['--relative']
 
+    # aws-lambda only
+    lambda_name = args['--name'] if is_aws_lambda_type else None
+
     # cmd only
     cmd = args['--cmd'] if is_cmd_type else None
 
-    # aws only
-    lambda_name = args['--name'] if is_aws_type else None
-
     def select_invoker():
-        if is_aws_type:
+        if is_aws_lambda_type:
             return LambdaInvoker(lambda_name)
         if is_cmd_type:
             return CmdInvoker(cmd)
-
         raise Exception("Invalid subcommand used")
 
     invoker = select_invoker()
