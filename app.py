@@ -8,7 +8,7 @@ This executable uses boto3, so the default AWS credentials can be set up based
 it, e.g. ~/.aws/credentials and ~/.aws/config can be used.
 
 Usage:
-    app.py (-p <path> -n <name>) [-f <glob> -e <bitflag> --relative]
+    app.py (-p <path> -n <name>) [-f <glob> -e <bitflag> --force-poll --relative]
     app.py (-h | --help)
 
 Options:
@@ -16,6 +16,7 @@ Options:
     -n <name>, --name <name>            AWS Lambda function name to trigger
     -f <glob>, --filter <glob>          Glob pattern(s) for file matching (comma delimited) [default: *.*]
     -e <bitflag>, --event <bitflag>     Event type to trigger on (0=NONE, 1=CREATED, 2=DELETED, 4=MODIFIED, 8=MOVED) [default: 1]
+    --force-poll                        Force using polling implementation, works for any platform [default: False]
     --relative                          Use relative path instead of absolute path for path matches
 """
 
@@ -28,7 +29,7 @@ import time
 import boto3
 from docopt import docopt
 
-from watchdog.observers import Observer
+from watchdog.observers import Observer, polling
 from watchdog.events import PatternMatchingEventHandler
 
 # logging falls under global
@@ -136,6 +137,7 @@ def main():
     lambda_name = args['--name']
     glob_filters = args['--filter'].rstrip(',').split(',')
     event_bitflag = FileEvent(int(args['--event']))
+    force_poll = args['--force-poll']
     use_abs_path = not args['--relative']
 
     print('Filewatcher AWS Trigger program has started, CTRL-C to terminate...')
@@ -147,7 +149,7 @@ def main():
         ignore_directories=True,
         lambda_name=lambda_name)
 
-    observer = Observer()
+    observer = Observer() if not force_poll else polling.PollingObserver()
     observer.schedule(event_handler, watchpath, recursive=True)
     observer.start()
 
