@@ -46,8 +46,14 @@ after_success:
   if [ "$TEST" = "false" ] && [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
     docker tag $IMAGE_NAME $IMAGE_NAME:python-$PYTHON_VERS
     docker push $IMAGE_NAME:python-$PYTHON_VERS
+
+    if [ -n "$TRAVIS_TAG" ]; then
+      docker tag $IMAGE_NAME $IMAGE_NAME:$TRAVIS_TAG_python-$PYTHON_VERS
+      docker push $IMAGE_NAME:$TRAVIS_TAG_python-$PYTHON_VERS
+    fi
   fi
 
 branches:
   only:
   - master
+  - /^v\d+\.\d+\.\d+(-\S*)?$/
