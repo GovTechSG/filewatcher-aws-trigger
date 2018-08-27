@@ -1,5 +1,7 @@
 # `filewatch-trigger`
 
+[![Build Status](https://travis-ci.org/guangie88/filewatch-trigger.svg?branch=master)](https://travis-ci.org/guangie88/filewatch-trigger)
+
 Experimental File Watcher program to trigger any of the below actions:
 
 - AWS Lambda function
