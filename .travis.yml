@@ -28,7 +28,7 @@ matrix:
     - TEST=true
 
 before_script:
-- set -e
+- set -euo pipefail
 - |
   if [ "$TEST" = "false" ]; then
     docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
