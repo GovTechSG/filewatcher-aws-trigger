@@ -48,8 +48,8 @@ after_success:
     docker push $IMAGE_NAME:python-$PYTHON_VERS
 
     if [ -n "$TRAVIS_TAG" ]; then
-      docker tag $IMAGE_NAME $IMAGE_NAME:$TRAVIS_TAG_python-$PYTHON_VERS
-      docker push $IMAGE_NAME:$TRAVIS_TAG_python-$PYTHON_VERS
+      docker tag $IMAGE_NAME $IMAGE_NAME:${TRAVIS_TAG}_python-${PYTHON_VERS}
+      docker push $IMAGE_NAME:${TRAVIS_TAG}_python-${PYTHON_VERS}
     fi
   fi
 
