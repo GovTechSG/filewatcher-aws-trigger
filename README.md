@@ -1,4 +1,4 @@
-# `filewatch-aws-trigger`
+# `filewatch-trigger`
 
 Experimental File Watcher program to trigger AWS Lambda.
 
@@ -18,13 +18,13 @@ Submits payload of the given JSON form in byte format:
 
 ### Docker
 
-Visit <https://hub.docker.com/r/guangie88/filewatch-aws-trigger/> to check out
+Visit <https://hub.docker.com/r/guangie88/filewatch-trigger/> to check out
 the pre-built Docker images to immediately use the application.
 
 As an example:
 
 ```bash
-docker run --rm -it guangie88/filewatch-aws-trigger:python-3.7 -h
+docker run --rm -it guangie88/filewatch-trigger:python-3.7 -h
 ```
 
 This should present the application help screen for more usage infomation.
@@ -33,7 +33,7 @@ For a quick and easy usage example:
 
 ```bash
 docker run --rm -it -v ~/.aws:/root/.aws -v ${PWD}:/app \
-    guangie88/filewatch-aws-trigger:python-3.7 \
+    guangie88/filewatch-trigger:python-3.7 \
     -p . \
     -f "*.jpg,*.png" \
     -n test-trigger
