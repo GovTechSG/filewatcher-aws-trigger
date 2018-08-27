@@ -2,7 +2,7 @@
 
 #pylint: disable=line-too-long
 """
-Filewatcher AWS trigger
+Filewatch AWS trigger
 
 This executable uses boto3, so the default AWS credentials can be set up based
 it, e.g. ~/.aws/credentials and ~/.aws/config can be used.
@@ -130,7 +130,7 @@ def main():
     """
     Main function to call.
     """
-    args = docopt(__doc__, version='FileWatcher AWS Trigger v0.1')
+    args = docopt(__doc__, version='FileWatch AWS Trigger v0.1.1')
     LOGGER.debug(args)
 
     watchpath = args['--watchpath']
@@ -140,7 +140,7 @@ def main():
     force_poll = args['--force-poll']
     use_abs_path = not args['--relative']
 
-    print('Filewatcher AWS Trigger program has started, CTRL-C to terminate...')
+    print('Filewatch AWS Trigger program has started, CTRL-C to terminate...')
 
     event_handler = Handler(
         patterns=glob_filters,
