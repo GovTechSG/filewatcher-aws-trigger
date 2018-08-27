@@ -2,7 +2,7 @@ language: bash
 
 env:
   global:
-  - IMAGE_NAME: guangie88/filewatch-aws-trigger
+  - IMAGE_NAME: guangie88/filewatch-trigger
 
 matrix:
   include:

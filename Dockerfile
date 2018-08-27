@@ -7,4 +7,7 @@ COPY requirements.txt /app/
 RUN python3 -m pip install -r requirements.txt
 
 COPY app.py /app/
+COPY sub/*.py /app/sub/
+COPY sub/base/*.py /app/sub/base/
+
 ENTRYPOINT ["/app/app.py"]

@@ -2,35 +2,41 @@
 
 #pylint: disable=line-too-long
 """
-Filewatch AWS trigger
+Filewatch Trigger
 
-This executable uses boto3, so the default AWS credentials can be set up based
-it, e.g. ~/.aws/credentials and ~/.aws/config can be used.
+Triggers possibly the following actions based on provided parameters:
+- AWS Lambda function
+- Shell template command (with path and file event type)
+
+For AWS, this application uses boto3, so the default AWS credentials can be set
+up based on boto3, e.g. ~/.aws/credentials and ~/.aws/config can be used.
 
 Usage:
-    app.py (-p <path> -n <name>) [-f <glob> -e <bitflag> --force-poll --relative]
+    app.py aws-lambda (-p <path> -n <name>) [-f <glob> -e <bitflag> --force-poll --relative]
+    app.py cmd (-p <path> -c <cmd>) [-f <glob> -e <bitflag> --force-poll --relative]
     app.py (-h | --help)
 
 Options:
     -p <path>, --watchpath <path>       Path to watch recursively
+    -c <cmd>, --cmd <cmd>               Command to run when there is a file trigger
     -n <name>, --name <name>            AWS Lambda function name to trigger
     -f <glob>, --filter <glob>          Glob pattern(s) for file matching (comma delimited) [default: *.*]
     -e <bitflag>, --event <bitflag>     Event type to trigger on (0=NONE, 1=CREATED, 2=DELETED, 4=MODIFIED, 8=MOVED) [default: 1]
-    --force-poll                        Force using polling implementation, works for any platform [default: False]
+    --force-poll                        Force using polling implementation, works for any platform
     --relative                          Use relative path instead of absolute path for path matches
 """
 
 from enum import Flag
 import logging
-import json
 import os
 import time
 
-import boto3
 from docopt import docopt
-
 from watchdog.observers import Observer, polling
 from watchdog.events import PatternMatchingEventHandler
+
+from sub.aws_lambda import LambdaInvoker
+from sub.cmd import CmdInvoker
 
 # logging falls under global
 logging.basicConfig(level=logging.INFO,
@@ -53,12 +59,12 @@ class FileEvent(Flag):
 class Handler(PatternMatchingEventHandler):
     """
     Implements PatternMatchingEventHandler with custom parameters to trigger
-    AWS lambda function.
+    the given invoker.
     """
-    def __init__(self, file_event, lambda_name, use_abs_path, *args, **kwargs):
+    def __init__(self, invoker, file_event, use_abs_path, *args, **kwargs):
         super(Handler, self).__init__(*args, **kwargs)
+        self.invoker = invoker
         self.file_event = file_event
-        self.lambda_name = lambda_name
         self.use_abs_path = use_abs_path
 
     def process(self, event):
@@ -68,11 +74,11 @@ class Handler(PatternMatchingEventHandler):
         Uses default AWS credentials.
         """
         path = os.path.abspath(event.src_path) if self.use_abs_path else event.src_path
+        event_type = event.event_type
         LOGGER.info("%s - %s", path, event.event_type)
 
-        trigger_lambda(
-            self.lambda_name,
-            json.dumps(dict(path=path)))
+        self.invoker.invoke(path, event_type)
+
 
     def on_created(self, event):
         """
@@ -107,47 +113,45 @@ class Handler(PatternMatchingEventHandler):
             self.process(event)
 
 
-def trigger_lambda(name, payload):
-    """
-    Helper function to triggers the AWS lambda function based on the given name
-    and payload. The payload should contain the JSON field 'path' in serialized
-    byte format.
-    """
-    client = boto3.client('lambda')
-
-    res = client.invoke(
-        FunctionName=name,
-        # InvocationType='Event',
-        InvocationType='RequestResponse',
-        Payload=payload
-    )
-
-    body = res['Payload'].read().decode('utf-8')
-    LOGGER.info(body)
-
-
 def main():
     """
     Main function to call.
     """
-    args = docopt(__doc__, version='FileWatch AWS Trigger v0.1.1')
+    args = docopt(__doc__, version='Filewatch Trigger v0.2.0')
     LOGGER.debug(args)
 
+    is_aws_lambda_type = args['aws-lambda']
+    is_cmd_type = args['cmd']
+
+    # common options
     watchpath = args['--watchpath']
-    lambda_name = args['--name']
     glob_filters = args['--filter'].rstrip(',').split(',')
     event_bitflag = FileEvent(int(args['--event']))
     force_poll = args['--force-poll']
     use_abs_path = not args['--relative']
 
-    print('Filewatch AWS Trigger program has started, CTRL-C to terminate...')
+    # aws-lambda only
+    lambda_name = args['--name'] if is_aws_lambda_type else None
+
+    # cmd only
+    cmd = args['--cmd'] if is_cmd_type else None
+
+    def select_invoker():
+        if is_aws_lambda_type:
+            return LambdaInvoker(lambda_name)
+        if is_cmd_type:
+            return CmdInvoker(cmd)
+        raise Exception("Invalid subcommand used")
+
+    invoker = select_invoker()
+    print('Filewatch Trigger program has started, CTRL-C to terminate...')
 
     event_handler = Handler(
         patterns=glob_filters,
+        invoker=invoker,
         file_event=event_bitflag,
         use_abs_path=use_abs_path,
-        ignore_directories=True,
-        lambda_name=lambda_name)
+        ignore_directories=True)
 
     observer = Observer() if not force_poll else polling.PollingObserver()
     observer.schedule(event_handler, watchpath, recursive=True)
